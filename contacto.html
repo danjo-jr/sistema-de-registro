@@ -3,10 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contacto</title>
+    <title>Checklist de Inspección Vehicular</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1f2937, #111827);
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .btn-ok.selected {
+            background-color: #10B981;
+            color: white;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        .btn-nok.selected {
+            background-color: #EF4444;
+            color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .modal-bg {
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+        }
+        .progress-bar-inner {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
 </head>
-<body>
-    <h1>Correo: daniloalvarezrodriguez@gmail.com</h1>
-        <p>Estudiante</p>
+<body class="gradient-bg text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2">Checklist de Inspección Vehicular</h1>
+            <p class="text-lg text-gray-400">Evalúa un vehículo usado de forma rápida y sencilla.</p>
+        </header>
+
+        <!-- Progress Bar and Score -->
+        <div class="mb-6 bg-gray-700/50 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-medium text-gray-300">Progreso de Inspección</span>
+                <span id="progress-text" class="font-bold text-white">0 / 20</span>
+            </div>
+            <div class="w-full bg-gray-600 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-indigo-500 h-2.5 rounded-full progress-bar-inner" style="width: 0%"></div>
+            </div>
+             <div class="text-center mt-4">
+                <span class="text-lg font-medium text-gray-300">Puntaje Actual:</span>
+                <span id="score" class="text-2xl font-bold text-white ml-2">0</span>
+            </div>
+        </div>
+
+        <!-- Checklist Items -->
+        <div id="checklist-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Items will be injected by JavaScript -->
+        </div>
+        
+        <!-- Reset Button -->
+        <div class="text-center mt-8">
+            <button id="reset-button" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                Reiniciar Checklist
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal for Recommendation -->
+    <div id="modal" class="fixed inset-0 z-50 items-center justify-center hidden modal-bg">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 m-4 max-w-sm w-full text-center border border-gray-700">
+            <div id="modal-icon" class="mx-auto mb-4">
+                <!-- Icon will be injected by JavaScript -->
+            </div>
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-2"></h2>
+            <p id="modal-message" class="text-gray-300 mb-6"></p>
+            <button id="close-modal" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg w-full transition duration-300">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checklistContainer = document.getElementById('checklist-container');
+            const scoreElement = document.getElementById('score');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalIcon = document.getElementById('modal-icon');
+            const closeModalButton = document.getElementById('close-modal');
+            const resetButton = document.getElementById('reset-button');
+
+            // Data for the checklist
+            const items = [
+                { id: 1, text: 'Nivel de aceite del motor', tip: 'Si está bajo o sucio = mal mantenimiento' },
+                { id: 2, text: 'Estado del radiador y refrigerante', tip: 'Aceite en refrigerante = daño en culata' },
+                { id: 3, text: 'Fugas visibles de líquidos', tip: 'Aceite/refrigerante fugando = alerta roja' },
+                { id: 4, text: 'Correa de distribución y accesorios', tip: 'Cambio atrasado = alto costo futuro' },
+                { id: 5, text: 'Batería y conexiones eléctricas', tip: 'Arranque lento = batería o motor de arranque' },
+                { id: 6, text: 'Sistema de frenos', tip: 'Frenos desgastados = inseguridad inmediata' },
+                { id: 7, text: 'Suspensión y amortiguadores', tip: 'Amortiguadores dañados afectan seguridad' },
+                { id: 8, text: 'Dirección', tip: 'Juego en volante = desgaste de rótulas o caja' },
+                { id: 9, text: 'Neumáticos', tip: 'Desgaste irregular = problema de alineación' },
+                { id: 10, text: 'Escape y emisiones', tip: 'Humo azul/negro = fallas de motor' },
+                { id: 11, text: 'Tarjeta de propiedad', tip: 'Coincidencia motor/chasis obligatoria' },
+                { id: 12, text: 'SOAT vigente', tip: 'Revisar fecha y validez en RUNT' },
+                { id: 13, text: 'Técnico-Mecánica vigente', tip: 'Debe estar aprobada y vigente' },
+                { id: 14, text: 'Historial en el RUNT', tip: 'Sin reportes negativos' },
+                { id: 15, text: 'Multas y comparendos', tip: 'Verificar en SIMIT y tránsito local' },
+                { id: 16, text: 'Embargos o limitaciones', tip: 'Preguntar en tránsito local' },
+                { id: 17, text: 'Luces completas', tip: 'Revisar todas antes de rodar' },
+                { id: 18, text: 'Vidrios y espejos', tip: 'Sin grietas o polarizados ilegales' },
+                { id: 19, text: 'Cinturones de seguridad', tip: 'Funcionen bien y sin desgaste' },
+                { id: 20, text: 'Chasis y carrocería', tip: 'Revisar golpes, soldaduras y corrosión' }
+            ];
+
+            let itemStates = new Array(items.length).fill(null);
+
+            // Function to generate checklist items
+            function renderItems() {
+                checklistContainer.innerHTML = '';
+                items.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card rounded-lg p-4 flex flex-col justify-between';
+                    
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-start">
+                                <span class="text-indigo-400 font-bold text-lg mr-3">${item.id}.</span>
+                                <h3 class="font-semibold text-white">${item.text}</h3>
+                            </div>
+                            <p class="text-sm text-gray-400 ml-7 mt-1">${item.tip}</p>
+                        </div>
+                        <div class="flex justify-end gap-2 mt-4">
+                            <button class="btn-ok w-16 py-1 rounded-md bg-gray-600 hover:bg-green-500 transition-colors duration-200" data-index="${index}" data-status="ok">OK</button>
+                            <button class="btn-nok w-16 py-1 rounded-md bg-gray-600 hover:bg-red-500 transition-colors duration-200" data-index="${index}" data-status="nok">NOK</button>
+                        </div>
+                    `;
+                    checklistContainer.appendChild(card);
+                });
+                addEventListeners();
+            }
+            
+            // Function to add event listeners to buttons
+            function addEventListeners() {
+                const buttons = document.querySelectorAll('.btn-ok, .btn-nok');
+                buttons.forEach(button => {
+                    button.addEventListener('click', handleButtonClick);
+                });
+            }
+
+            // Handle button clicks
+            function handleButtonClick(event) {
+                const index = parseInt(event.target.dataset.index);
+                const status = event.target.dataset.status;
+
+                itemStates[index] = status;
+                updateUI();
+            }
+            
+            // Update UI based on states
+            function updateUI() {
+                let score = 0;
+                let completedCount = 0;
+
+                itemStates.forEach((state, index) => {
+                    const okButton = document.querySelector(`.btn-ok[data-index="${index}"]`);
+                    const nokButton = document.querySelector(`.btn-nok[data-index="${index}"]`);
+
+                    okButton.classList.remove('selected');
+                    nokButton.classList.remove('selected');
+
+                    if (state === 'ok') {
+                        score += 5;
+                        completedCount++;
+                        okButton.classList.add('selected');
+                    } else if (state === 'nok') {
+                        completedCount++;
+                        nokButton.classList.add('selected');
+                    }
+                });
+
+                scoreElement.textContent = score;
+                progressText.textContent = `${completedCount} / ${items.length}`;
+                const progressPercentage = (completedCount / items.length) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
+
+                if (completedCount === items.length) {
+                    showRecommendation(score);
+                }
+            }
+
+            // Show final recommendation
+            function showRecommendation(finalScore) {
+                if (finalScore >= 90) {
+                    modalTitle.textContent = '¡Excelente Opción!';
+                    modalMessage.textContent = 'Este vehículo ha pasado la inspección inicial. Te recomendamos agendar un peritaje técnico completo para una revisión a fondo.';
+                    modalIcon.innerHTML = `<svg class="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                } else {
+                    modalTitle.textContent = '¡Cuidado!';
+                    modalMessage.textContent = 'Este vehículo presenta varias alertas. Te recomendamos que busques otra opción para evitar problemas y costos futuros.';
+                     modalIcon.innerHTML = `<svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                }
+                modal.style.display = 'flex';
+            }
+            
+            // Close modal
+            closeModalButton.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+            
+            // Reset functionality
+            resetButton.addEventListener('click', () => {
+                itemStates.fill(null);
+                updateUI();
+                // Also remove selected classes from all buttons
+                document.querySelectorAll('.btn-ok, .btn-nok').forEach(btn => btn.classList.remove('selected'));
+            });
+
+            // Initial render
+            renderItems();
+        });
+    </script>
 </body>
 </html>
